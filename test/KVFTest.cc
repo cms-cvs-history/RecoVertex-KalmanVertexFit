@@ -24,13 +24,12 @@ using namespace std;
 KVFTest::KVFTest(const edm::ParameterSet& iConfig)
   : theConfig(iConfig)
 {
-  outputFile_   = iConfig.getUntrackedParameter<std::string>("outputFile");
+  trackLabel_ = iConfig.getParameter<std::string>("TrackLabel");
+  outputFile_ = iConfig.getUntrackedParameter<std::string>("outputFile");
+  kvfPSet = iConfig.getParameter<edm::ParameterSet>("KVFParameters");
   rootFile_ = TFile::Open(outputFile_.c_str(),"RECREATE"); 
-
   edm::LogInfo("RecoVertex/KVFTest") 
     << "Initializing KVF TEST analyser  - Output file: " << outputFile_ <<"\n";
-
-
 }
 
 
@@ -64,18 +63,18 @@ KVFTest::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     // get RECO tracks from the event
     // `tks` can be used as a ptr to a reco::TrackCollection
     edm::Handle<reco::TrackCollection> tks;
-    iEvent.getByLabel(trackLabel(), tks);
+    iEvent.getByLabel(trackLabel_, tks);
 
-    // interface RECO tracks to vertex reconstruction
     edm::LogInfo("RecoVertex/KVFTest") 
       << "Found: " << (*tks).size() << " reconstructed tracks" << "\n";
     cout << "got " << (*tks).size() << " tracks " << endl;
 
-    // Transform Track to TransientTrack
-
+    // Convert Track vector to TransientTrack vector
     vector<TransientTrack> t_tks;
     for (unsigned int i = 0; i < (*tks).size() ; i++) {
+      // Create a TrackRef
       TrackRef trkRef(tks, i);
+      // Conversion to TransientTrack (implicit conversion using the TrackRef constructor)
       t_tks.push_back(trkRef);
     }
 
@@ -84,10 +83,10 @@ KVFTest::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     
     // Call the KalmanVertexFitter if more than 1 track
     if (t_tks.size() > 1) {
-      KalmanVertexFitter kvf;
+      KalmanVertexFitter kvf(kvfPSet);
       TransientVertex tv = kvf.vertex(t_tks);
 
-      std::cout << "result: " << Vertex::Point(tv.position()) << "\n";
+      std::cout << "Position: " << Vertex::Point(tv.position()) << "\n";
 
       // For the analysis: compare to your SimVertex
       SimVertex sv = getSimVertex(iEvent);
@@ -104,11 +103,6 @@ KVFTest::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 }
 
-
-std::string KVFTest::trackLabel() const
-{
-  return theConfig.getParameter<std::string>("TrackLabel");
-}
 
 //Returns the first vertex in the list.
 

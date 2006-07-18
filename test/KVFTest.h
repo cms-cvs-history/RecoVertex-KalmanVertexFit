@@ -47,15 +47,15 @@ public:
   virtual void beginJob(edm::EventSetup const&);
   virtual void endJob();
 
-  std::string trackLabel() const;
-  
 private:
 
   SimVertex getSimVertex(const edm::Event& iEvent) const;
 
   edm::ParameterSet theConfig;
+  edm::ParameterSet kvfPSet;
   SimpleVertexTree *tree;
   TFile*  rootFile_;
 
   std::string outputFile_; // output file
+  std::string trackLabel_; // label of track producer
 };
