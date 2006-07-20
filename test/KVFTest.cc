@@ -8,7 +8,10 @@
 #include "FWCore/Framework/interface/Handle.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/Framework/interface/ESHandle.h"
 
+#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
 #include "RecoVertex/VertexPrimitives/interface/ConvertError.h"
@@ -69,14 +72,13 @@ KVFTest::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       << "Found: " << (*tks).size() << " reconstructed tracks" << "\n";
     cout << "got " << (*tks).size() << " tracks " << endl;
 
-    // Convert Track vector to TransientTrack vector
-    vector<TransientTrack> t_tks;
-    for (unsigned int i = 0; i < (*tks).size() ; i++) {
-      // Create a TrackRef
-      TrackRef trkRef(tks, i);
-      // Conversion to TransientTrack (implicit conversion using the TrackRef constructor)
-      t_tks.push_back(trkRef);
-    }
+    // Transform Track to TransientTrack
+
+    //get the builder:
+    edm::ESHandle<TransientTrackBuilder> theB;
+    iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB);
+    //do the conversion:
+    vector<TransientTrack> t_tks = (*theB).build(tks);
 
     edm::LogInfo("RecoVertex/KVFTest") 
       << "Found: " << t_tks.size() << " reconstructed tracks" << "\n";
