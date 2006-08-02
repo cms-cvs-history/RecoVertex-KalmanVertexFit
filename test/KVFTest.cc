@@ -113,7 +113,7 @@ SimVertex KVFTest::getSimVertex(const edm::Event& iEvent) const
 {
    // get the simulated vertices
    Handle<edm::SimVertexContainer> simVtcs;
-   iEvent.getByLabel("SimG4Object", simVtcs);
+   iEvent.getByLabel("g4SimHits", simVtcs);
 //    std::cout << "SimVertex " << simVtcs->size() << std::endl;
 //    for(edm::SimVertexContainer::const_iterator v=simVtcs->begin();
 //        v!=simVtcs->end(); ++v){
