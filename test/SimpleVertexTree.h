@@ -5,7 +5,9 @@
 
 #include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
 #include "RecoVertex/KalmanVertexFit/test/VertexFitterResult.h"
-#include "SimDataFormats/Vertex/interface/SimVertex.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingVertex.h"
+#include "SimTracker/TrackAssociation/interface/TrackAssociatorByChi2.h"
+
 #include "TString.h"
 
 /**
@@ -44,7 +46,8 @@ public:
    * \param fitterName The name of the TTree, and of the associated histograms. 
    */
 
-  SimpleVertexTree(const char * fitterName = "VertexFitter");
+  SimpleVertexTree(const char * fitterName = "VertexFitter",
+  		   TrackAssociatorByChi2 * associator = 0);
   virtual ~SimpleVertexTree();
 
   /**
@@ -53,7 +56,11 @@ public:
    * Timing information for the fit can also be provided.
    */
 
-  void fill(const TransientVertex & recv, const SimVertex *simv = 0,
+  void fill(const TransientVertex & recv, const TrackingVertex *simv = 0, 
+  	    reco::RecoToSimCollection *recSimColl = 0,
+  	    const float &time = 0.);
+
+  void fill(const TransientVertex & recv, const TrackingVertex *simv = 0,
   	    const float &time = 0.);
 
   /**
@@ -67,7 +74,7 @@ public:
    * Entry for a TkSimVertex, without RecVertex.
    */
 
-  void fill(const SimVertex *simv);
+  void fill(const TrackingVertex *simv);
 
 //   void fill(const TransientVertex & recVertex, const vector < RecTrack > & recTrackV,
 // 			const SimVertex * simv, const float &time);
@@ -98,6 +105,7 @@ private:
   bool trackTest;
   int maxTrack;
   TString* parameterNames[5];
+  TrackAssociatorByChi2 * associatorForParamAtPca;
 };
 #endif
 

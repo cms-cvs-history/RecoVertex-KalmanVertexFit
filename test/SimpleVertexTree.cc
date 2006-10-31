@@ -7,8 +7,9 @@
 
 using namespace std;
 
-SimpleVertexTree::SimpleVertexTree(const char * filterName) :
-	theFitterName(filterName)
+SimpleVertexTree::SimpleVertexTree(const char * filterName,
+	TrackAssociatorByChi2 * associator) :
+	theFitterName(filterName), associatorForParamAtPca(associator)
 {
 
   vertexTree = new TTree(filterName, "Vertex fit results");
@@ -18,7 +19,7 @@ SimpleVertexTree::SimpleVertexTree(const char * filterName) :
 //     maxTrack = SimpleConfigurable<int> (100, "SimpleVertexTree:maximumTracksToStore").value();
 //   } else 
   maxTrack = 0;
-  result = new VertexFitterResult(maxTrack);
+  result = new VertexFitterResult(maxTrack, associator);
 
   vertexTree->Branch("vertex",(void *)result->vertexPresent(),"vertex/I");
   vertexTree->Branch("simPos",(void *)result->simVertexPos(),"X/F:Y/F:Z/F");
@@ -129,20 +130,20 @@ SimpleVertexTree::~SimpleVertexTree()
 
 }
 
-void SimpleVertexTree::fill(const TransientVertex & recv, const SimVertex * simv, 
-			    const float &time) 
+void SimpleVertexTree::fill(const TransientVertex & recv, const TrackingVertex * simv, 
+  	    reco::RecoToSimCollection *recSimColl, const float &time) 
 {
-  result->fill(recv, simv, time);
+  result->fill(recv, simv, recSimColl, time);
   fill();
 }
 
 void SimpleVertexTree::fill(const TransientVertex & recv, const float &time) 
 {
-  result->fill(recv, 0, time);
+  result->fill(recv, 0, 0, time);
   fill();
 }
 
-void SimpleVertexTree::fill(const SimVertex * simv) 
+void SimpleVertexTree::fill(const TrackingVertex * simv) 
 {
   result->fill(TransientVertex(), simv, 0);
   fill();

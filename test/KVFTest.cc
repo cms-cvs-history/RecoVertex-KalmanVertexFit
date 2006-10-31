@@ -16,7 +16,7 @@
 #include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
 #include "RecoVertex/VertexPrimitives/interface/ConvertError.h"
 #include "RecoVertex/KalmanVertexFit/interface/KalmanVertexFitter.h"
-#include "SimDataFormats/Vertex/interface/SimVertexContainer.h"
+#include "SimTracker/Records/interface/TrackAssociatorRecord.h"
 
 #include <iostream>
 
@@ -40,8 +40,12 @@ KVFTest::~KVFTest() {
   delete rootFile_;
 }
 
-void KVFTest::beginJob(edm::EventSetup const&){
-  tree = new SimpleVertexTree("VertexFitter");
+void KVFTest::beginJob(edm::EventSetup const& setup){
+  edm::ESHandle<TrackAssociatorBase> theAssociatorForParamAtPca;
+  setup.get<TrackAssociatorRecord>().get("TrackAssociatorByChi2",theAssociatorForParamAtPca);
+  associatorForParamAtPca = (TrackAssociatorByChi2 *) theAssociatorForParamAtPca.product();
+
+  tree = new SimpleVertexTree("VertexFitter", associatorForParamAtPca);
 }
 
 
@@ -92,8 +96,15 @@ KVFTest::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       std::cout << "Position: " << Vertex::Point(tv.position()) << "\n";
 
       // For the analysis: compare to your SimVertex
-      SimVertex sv = getSimVertex(iEvent);
-      tree->fill(tv, &sv);
+      TrackingVertex sv = getSimVertex(iEvent);
+  edm::Handle<TrackingParticleCollection>  TPCollectionH ;
+  iEvent.getByLabel("trackingtruth","TrackTruth",TPCollectionH);
+  const TrackingParticleCollection tPC = *(TPCollectionH.product());
+      reco::RecoToSimCollection recSimColl=associatorForParamAtPca->associateRecoToSim(tks,
+									      TPCollectionH,
+									      &iEvent);
+
+      tree->fill(tv, &sv, &recSimColl);
     }
     
   }
@@ -109,11 +120,15 @@ KVFTest::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 //Returns the first vertex in the list.
 
-SimVertex KVFTest::getSimVertex(const edm::Event& iEvent) const
+TrackingVertex KVFTest::getSimVertex(const edm::Event& iEvent) const
 {
    // get the simulated vertices
-   Handle<edm::SimVertexContainer> simVtcs;
-   iEvent.getByLabel("g4SimHits", simVtcs);
+  edm::Handle<TrackingVertexCollection>  TVCollectionH ;
+  iEvent.getByLabel("trackingtruth","VertexTruth",TVCollectionH);
+  const TrackingVertexCollection tPC = *(TVCollectionH.product());
+
+//    Handle<edm::SimVertexContainer> simVtcs;
+//    iEvent.getByLabel("g4SimHits", simVtcs);
 //    std::cout << "SimVertex " << simVtcs->size() << std::endl;
 //    for(edm::SimVertexContainer::const_iterator v=simVtcs->begin();
 //        v!=simVtcs->end(); ++v){
@@ -125,5 +140,5 @@ SimVertex KVFTest::getSimVertex(const edm::Event& iEvent) const
 // 	       << v->noParent() << " "
 //               << std::endl;
 //    }
-   return *(simVtcs->begin());
+   return *(tPC.begin());
 }

@@ -13,7 +13,7 @@
 //
 // Original Author:  Pascal Vanlaer
 //         Created:  Tue Feb 28 11:06:34 CET 2006
-// $Id: KVFTest.h,v 1.5 2006/06/06 12:03:52 vanlaer Exp $
+// $Id: KVFTest.h,v 1.2 2006/07/18 09:19:28 speer Exp $
 //
 //
 
@@ -30,7 +30,9 @@
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "SimDataFormats/Vertex/interface/SimVertex.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingVertexContainer.h"
 #include "RecoVertex/KalmanVertexFit/test/SimpleVertexTree.h"
+#include "SimTracker/TrackAssociation/interface/TrackAssociatorByChi2.h"
 #include <TFile.h>
 
   /**
@@ -49,10 +51,11 @@ public:
 
 private:
 
-  SimVertex getSimVertex(const edm::Event& iEvent) const;
+  TrackingVertex getSimVertex(const edm::Event& iEvent) const;
 
   edm::ParameterSet theConfig;
   edm::ParameterSet kvfPSet;
+  TrackAssociatorByChi2 * associatorForParamAtPca;
   SimpleVertexTree *tree;
   TFile*  rootFile_;
 

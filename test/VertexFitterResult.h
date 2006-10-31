@@ -6,8 +6,11 @@
 // #include "CommonReco/PatternTools/interface/RefittedRecTrack.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
-#include "SimDataFormats/Vertex/interface/SimVertex.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingVertex.h"
+#include "SimTracker/TrackAssociation/interface/TrackAssociatorByChi2.h"
+
 #include <vector>
 
 /**
@@ -24,14 +27,16 @@ public:
 //   typedef vector<const TkSimTrack*>	SimTrackCont;
   typedef std::vector<reco::TransientTrack>		TTrackCont;
 
-  VertexFitterResult(const int maxTracks = 100);
+  VertexFitterResult(const int maxTracks = 100, TrackAssociatorByChi2 *associator = 0);
   ~VertexFitterResult();
 
-  void fill(const TransientVertex & recv, const SimVertex * simv = 0, 
+  void fill(const TransientVertex & recv, const TrackingVertex * simv = 0, 
+  	    reco::RecoToSimCollection *recSimColl = 0,
   	    const float &time = 0);
 
   void fill(const TransientVertex & recVertex, const TTrackCont & recTrackV,
-	    const SimVertex * simv = 0, const float &time = 0);
+	    const TrackingVertex * simv = 0, 
+      	    reco::RecoToSimCollection *recSimColl = 0, const float &time = 0);
 
 
   const float* simVertexPos() const {return simPos;}
@@ -79,10 +84,10 @@ private:
 
 //   typedef vector<const TkSimTrack*> SimTrkCont;
 // 
-//   void fillParameters (TrajectoryStateOnSurface& ip, float* params[5],
-//   			int trackNumber);
-//   void fillErrors (TrajectoryStateOnSurface& ip, float* errors[5],
-//   			int trackNumber);
+  void fillParameters (const reco::TrackBase::ParameterVector& params, float* params[5],
+  			int trackNumber);
+  void fillErrors (const reco::TrackBase::CovarianceMatrix& perigeeCov, float* errors[5],
+  			int trackNumber);
 
 private:
 //   class RecTrackMatch{
@@ -101,6 +106,9 @@ private:
 //   };
 
   // NumberOfSharedTracks numberOfSharedTracks;
+
+  TrackAssociatorByChi2 * associatorForParamAtPca;
+
   float simPos[3];
   float recPos[3];
   float recErr[3];

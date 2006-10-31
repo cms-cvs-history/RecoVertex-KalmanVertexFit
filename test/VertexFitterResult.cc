@@ -1,14 +1,16 @@
 #include "RecoVertex/KalmanVertexFit/test/VertexFitterResult.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
+#include "SimTracker/TrackAssociation/interface/TrackAssociatorBase.h"
 
-// #include "Vertex/VertexAssociation/interface/VertexAssociationToolsFactory.h"
-// #include "TrackerReco/TkTrackAssociation/interface/TrackAssociator.h"
-// #include "CommonReco/PatternTools/interface/TransverseImpactPointExtrapolator.h"
-// #include "TrackerReco/TkEvent/interface/TkSimTrack.h"
 
-VertexFitterResult::VertexFitterResult(const int maxTracks)
+using namespace reco;
+using namespace std;
+
+VertexFitterResult::VertexFitterResult(const int maxTracks, TrackAssociatorByChi2 *associator)
+	: associatorForParamAtPca(associator)
 {
   theMaxTracks = maxTracks;
+  if (associatorForParamAtPca==0) theMaxTracks=0;
   for ( int i=0; i<5; i++ ) {
     if ( maxTracks>0 ) {
       simPars[i] = new float[maxTracks];
@@ -51,50 +53,21 @@ VertexFitterResult::~VertexFitterResult()
 }
 
 void VertexFitterResult::fill(const TransientVertex & recVertex,
-  			const SimVertex * simv, const float &time) 
+	const TrackingVertex * simv, reco::RecoToSimCollection *recSimColl,
+	const float &time) 
 {
-//   if (recVertex.isValid()) {
-//     recPos[0] = recVertex.position().x();
-//     recPos[1] = recVertex.position().y();
-//     recPos[2] = recVertex.position().z();
-// 
-//     recErr[0] = sqrt(recVertex.positionError().cxx());
-//     recErr[1] = sqrt(recVertex.positionError().cyy());
-//     recErr[2] = sqrt(recVertex.positionError().czz());
-// 
-//     chi[0] = recVertex.totalChiSquared();
-//     chi[1] = recVertex.degreesOfFreedom();
-//     chi[2] = ChiSquaredProbability(recVertex.totalChiSquared(), 
-// 					   recVertex.degreesOfFreedom());
-//     tracks[1] = recVertex.originalTracks().size();
-//     vertex = 2;
-//     fitTime = time;
-//   }
-// 
-//   if (simv!=0) {
-//     simPos[0] = simv->position().x();
-//     simPos[1] = simv->position().y();
-//     simPos[2] = simv->position().z();
-// 
-//     vertex += 1;
-// 
-//   }
-//   
   TTrackCont recTrackV;
   if (recVertex.isValid()) recTrackV = recVertex.originalTracks();
-  fill(recVertex, recTrackV, simv, time);
+  fill(recVertex, recTrackV, simv, recSimColl, time);
 }
 
 void VertexFitterResult::fill(const TransientVertex & recVertex, 
-			const TTrackCont & recTrackV,
-			const SimVertex * simv, const float &time)
+	const TTrackCont & recTrackV, const TrackingVertex * simv,
+	reco::RecoToSimCollection *recSimColl, const float &time)
 {
+  TrackingParticleRefVector simTrackV;
 
-//   SimTrkCont simTrackV;
-//   vector<const RecVertex *> rvs;
-//   vector<const TkSimVertex *> svs; 
-//   RecTrackCont refTracks;
-
+  Basic3DVector<double> vert;
   if (recVertex.isValid()) {
     recPos[0] = recVertex.position().x();
     recPos[1] = recVertex.position().y();
@@ -103,6 +76,7 @@ void VertexFitterResult::fill(const TransientVertex & recVertex,
     recErr[0] = sqrt(recVertex.positionError().cxx());
     recErr[1] = sqrt(recVertex.positionError().cyy());
     recErr[2] = sqrt(recVertex.positionError().czz());
+    vert = (Basic3DVector<double>) recVertex.position();
 
     chi[0] = recVertex.totalChiSquared();
     chi[1] = recVertex.degreesOfFreedom();
@@ -111,9 +85,6 @@ void VertexFitterResult::fill(const TransientVertex & recVertex,
     vertex = 2;
     fitTime = time;
     tracks[1] = recVertex.originalTracks().size();
-//     rvs.push_back(&recVertex);
-//     refTracks = recVertex.refittedTracks();
-    
   }
 
   if (simv!=0) {
@@ -121,65 +92,60 @@ void VertexFitterResult::fill(const TransientVertex & recVertex,
     simPos[1] = simv->position().y();
     simPos[2] = simv->position().z();
 
-//     simTrackV = simv->tkSimTracks();
-//     svs.push_back(simv);
+    simTrackV = simv->daughterTracks();
     vertex += 1;
+    for(TrackingVertex::tp_iterator simTrack = simv->daughterTracks_begin();
+                 (simTrack != simv->daughterTracks_end() && (numberOfSimTracks<theMaxTracks));
+		 simTrack++) {
+      
+      Basic3DVector<double> momAtVtx((**simTrack).momentum());
 
-//     for(SimTrkCont::const_iterator simTrack =simTrackV.begin();
-//                  (simTrack != simTrackV.end() && (numberOfSimTracks<theMaxTracks));
-// 		 simTrack++) {
-//       
-//       TrajectoryStateOnSurface simip = (**simTrack).impactPointStateOnSurface();
-//       fillParameters(simip, simPars, numberOfSimTracks);
-//       simIndex[numberOfSimTracks] = -1;
-//       ++numberOfSimTracks;
-//    }
-//     tracks[0] = simTrackV.size();
+      reco::TrackBase::ParameterVector sParameters=
+	associatorForParamAtPca->parametersAtClosestApproachGeom(vert, momAtVtx, (int) (**simTrack).charge());
+      fillParameters(sParameters, simPars, numberOfSimTracks);
+      simIndex[numberOfSimTracks] = -1;
+      ++numberOfSimTracks;
+    }
+    tracks[0] = simv->daughterTracks().size();
   }
 
 
-//   // now store all the recTrack...  
-//   VertexAssociationToolsFactory vtxAssocFact( simTrackV, svs, recTrackV, rvs);
-//   TrackAssociator * recTa = const_cast < TrackAssociator *> (vtxAssocFact.trackAssociator());
-//   if ((simv!=0) && (recVertex.isValid())) tracks[2] = numberOfSharedTracks(recVertex, *simv, *recTa);
-// 
-//   for(RecTrackCont::const_iterator recTrack =recTrackV.begin();
-//                (recTrack != recTrackV.end() 
-// 		&& (numberOfRecTracks<theMaxTracks));
-// 	       recTrack++) {
-//     //    cout << "Input; 1/Pt " << 1./(*recTrack).momentumAtVertex().transverse() << endl;
-// 
-//     //looking for sim tracks corresponding to our reconstructed tracks:  
-//     vector<const TkSimTrack *> simFound;
-//     if (simv!=0) simFound = recTa->simTracks(*recTrack);
-//     TrajectoryStateOnSurface recip;
-//     if(simFound.size() != 0) {
-//       //OK, it was associated, so get the state on the same surface as the 'SimState'
-//       recip = recTrack->stateOnSurface(simFound[0]->impactPointStateOnSurface().surface());
-//       SimTrkCont::const_iterator simTrackI = 
-// 	find(simTrackV.begin(), simTrackV.end(), simFound[0]);
-//       int simTrackIndex = simTrackI-simTrackV.begin();
-//       if (simTrackIndex<numberOfSimTracks) {
-//         simIndex[numberOfRecTracks] = simTrackIndex;
-//         recIndex[simTrackIndex] = numberOfRecTracks;
-// 	//	cout << "Assoc; 1/Pt " << 1./(*recTrack).momentumAtVertex().transverse() << endl;
-//       } else {
-// 	simIndex[numberOfRecTracks] = -1;
-//       }
-//     } else {
-//       simIndex[numberOfRecTracks] = -1;
-//       if (simv!=0) {
-//         // Not associated, but we have a SimVertex, so get the state at the PCA
-//         recip = TransverseImpactPointExtrapolator().extrapolate(
-//      		recTrack->innermostState(), simv->position());
-//       } else {
-//         // Not associated, and no SimVertex, so get innermostState...
-//         recip = recTrack->innermostState();
-//       }
-//     }
-// 
-//     fillParameters(recip, recPars, numberOfRecTracks);
-//     fillErrors(recip, recErrs, numberOfRecTracks);
+  // now store all the recTrack...  
+
+  for(TTrackCont::const_iterator recTrack =recTrackV.begin();
+               (recTrack != recTrackV.end() 
+		&& (numberOfRecTracks<theMaxTracks));
+	       recTrack++) {
+    //    cout << "Input; 1/Pt " << 1./(*recTrack).momentumAtVertex().transverse() << endl;
+
+    //looking for sim tracks corresponding to our reconstructed tracks:  
+    simIndex[numberOfRecTracks] = -1;
+
+    std::vector<std::pair<TrackingParticleRef, double> > simFound;
+    try {
+      if (recSimColl!=0) simFound = (*recSimColl)[recTrack->persistentTrackRef()];
+    } catch (cms::Exception e) {
+//       LogDebug("TrackValidator") << "reco::Track #" << rT << " with pt=" << track->pt() 
+// 				 << " NOT associated to any TrackingParticle" << "\n";
+//       edm::LogError("TrackValidator") << e.what() << "\n";
+    }
+
+    if(simFound.size() != 0) {
+      //OK, it was associated, so get the state on the same surface as the 'SimState'
+      TrackingParticleRefVector::const_iterator simTrackI = 
+	find(simTrackV.begin(), simTrackV.end(), simFound[0].first);
+      if (simTrackI!=simTrackV.end()) ++tracks[2];
+      int simTrackIndex = simTrackI-simTrackV.begin();
+      if (simTrackIndex<numberOfSimTracks) {
+        simIndex[numberOfRecTracks] = simTrackIndex;
+        recIndex[simTrackIndex] = numberOfRecTracks;
+	//	cout << "Assoc; 1/Pt " << 1./(*recTrack).momentumAtVertex().transverse() << endl;
+      }
+    }
+
+    TrajectoryStateClosestToPoint tscp = recTrack->trajectoryStateClosestToPoint(recVertex.position());
+    fillParameters(tscp.perigeeParameters(), recPars, numberOfRecTracks);
+    fillErrors(tscp.perigeeError(), recErrs, numberOfRecTracks);
 //     trackWeight[numberOfRecTracks] = recVertex.trackWeight(*recTrack);
 // 
 //     if ((recVertex.isValid())&&(recVertex.hasRefittedTracks())) {
@@ -201,46 +167,31 @@ void VertexFitterResult::fill(const TransientVertex & recVertex,
 //       }
 //     }
 // 
-//     ++numberOfRecTracks;
-//   }
-  //  if (vtxAssocFact != 0) delete vtxAssocFact;
+    ++numberOfRecTracks;
+  }
   
 }
 
-// void VertexFitterResult::fillParameters (TrajectoryStateOnSurface& ip,
-// 	float* params[5], int trackNumber)
-// {
-//   if ( ip.isValid() ) {
-//     params[0][trackNumber] = 1/ip.globalMomentum().perp();
-//     params[1][trackNumber] = ip.globalMomentum().theta();
-//     params[2][trackNumber] = ip.globalMomentum().phi(); 
-//     params[3][trackNumber] = ip.localPosition().x(); 
-//     params[4][trackNumber] = ip.localPosition().y(); 
-//   }
-// }
-// 
-// void VertexFitterResult::fillErrors (TrajectoryStateOnSurface& ip,
-// 	float* errors[5], int trackNumber)
-// {
-//   if ( ip.isValid() ) {
-//     float SinTheta=sin(ip.globalMomentum().theta());
-//     float CosTheta=cos(ip.globalMomentum().theta());
-//     float ptRec=ip.globalMomentum().perp();
-//     float InvSinTheta=1/SinTheta;
-//     float InvpErr=ip.curvilinearError().matrix()(1,1);
-//     float thetaErr=ip.curvilinearError().matrix()(2,2);
-//     float corr=ip.curvilinearError().matrix()(1,2);
-//     float InvptErr = 
-//       InvSinTheta*InvSinTheta*(InvpErr+(pow(CosTheta,2)/pow(ptRec,2))*thetaErr-2*(CosTheta/ptRec)*corr);
-// 
-//     errors[0][trackNumber] = sqrt(InvptErr);
-//     errors[1][trackNumber] = sqrt(ip.curvilinearError().matrix()(2,2));
-//     errors[2][trackNumber] = sqrt(ip.curvilinearError().matrix()(3,3));
-//     errors[3][trackNumber] = sqrt(ip.localError().matrix()(4,4)); 
-//     errors[4][trackNumber] = sqrt(ip.localError().matrix()(5,5)); 
-// 
-//   }
-// }
+void VertexFitterResult::fillParameters (const reco::TrackBase::ParameterVector& perigee,
+	float* params[5], int trackNumber)
+{
+  params[0][trackNumber] = perigee[0];
+  params[1][trackNumber] = perigee[1];
+  params[2][trackNumber] = perigee[2];
+  params[3][trackNumber] = perigee[3];
+  params[4][trackNumber] = perigee[4];
+}
+
+void VertexFitterResult::fillErrors (const reco::TrackBase::CovarianceMatrix& perigeeCov,
+	float* errors[5], int trackNumber)
+{
+  errors[0][trackNumber] = sqrt(perigeeCov(reco::TrackBase::i_transverseCurvature,reco::TrackBase::i_transverseCurvature));
+  errors[1][trackNumber] = sqrt(perigeeCov(reco::TrackBase::i_theta,reco::TrackBase::i_theta));
+  errors[2][trackNumber] = sqrt(perigeeCov(reco::TrackBase::i_phi0,reco::TrackBase::i_phi0));
+  errors[3][trackNumber] = sqrt(perigeeCov(reco::TrackBase::i_d0,reco::TrackBase::i_d0));
+  errors[4][trackNumber] = sqrt(perigeeCov(reco::TrackBase::i_dz,reco::TrackBase::i_dz));
+
+}
 
 void VertexFitterResult::reset()
 {
