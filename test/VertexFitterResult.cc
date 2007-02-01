@@ -1,7 +1,7 @@
 #include "RecoVertex/KalmanVertexFit/test/VertexFitterResult.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
 #include "SimTracker/TrackAssociation/interface/TrackAssociatorBase.h"
-
+#include "TrackingTools/TransientTrack/interface/TrackTransientTrack.h"
 
 using namespace reco;
 using namespace std;
@@ -123,7 +123,11 @@ void VertexFitterResult::fill(const TransientVertex & recVertex,
 
     std::vector<std::pair<TrackingParticleRef, double> > simFound;
     try {
-      if (recSimColl!=0) simFound = (*recSimColl)[recTrack->persistentTrackRef()];
+      const TrackTransientTrack* ttt = dynamic_cast<const TrackTransientTrack*>(recTrack->basicTransientTrack());
+      if ((ttt!=0) && (recSimColl!=0)) simFound = (*recSimColl)[ttt->persistentTrackRef()];
+//       if (recSimColl!=0) simFound = (*recSimColl)[recTrack->persistentTrackRef()];
+//      if (recSimColl!=0) simFound = (*recSimColl)[recTrack];
+
     } catch (cms::Exception e) {
 //       LogDebug("TrackValidator") << "reco::Track #" << rT << " with pt=" << track->pt() 
 // 				 << " NOT associated to any TrackingParticle" << "\n";
@@ -182,15 +186,25 @@ void VertexFitterResult::fillParameters (const reco::TrackBase::ParameterVector&
   params[4][trackNumber] = perigee[4];
 }
 
-void VertexFitterResult::fillErrors (const reco::TrackBase::CovarianceMatrix& perigeeCov,
+void VertexFitterResult::fillParameters (const PerigeeTrajectoryParameters & ptp,
+	float* params[5], int trackNumber)
+{
+  AlgebraicVector & perigee = ptp.vector();
+  params[0][trackNumber] = perigee[0];
+  params[1][trackNumber] = perigee[1];
+  params[2][trackNumber] = perigee[2];
+  params[3][trackNumber] = perigee[3];
+  params[4][trackNumber] = perigee[4];
+}
+
+void VertexFitterResult::fillErrors (const PerigeeTrajectoryError & pte,
 	float* errors[5], int trackNumber)
 {
-  errors[0][trackNumber] = sqrt(perigeeCov(reco::TrackBase::i_transverseCurvature,reco::TrackBase::i_transverseCurvature));
-  errors[1][trackNumber] = sqrt(perigeeCov(reco::TrackBase::i_theta,reco::TrackBase::i_theta));
-  errors[2][trackNumber] = sqrt(perigeeCov(reco::TrackBase::i_phi0,reco::TrackBase::i_phi0));
-  errors[3][trackNumber] = sqrt(perigeeCov(reco::TrackBase::i_d0,reco::TrackBase::i_d0));
-  errors[4][trackNumber] = sqrt(perigeeCov(reco::TrackBase::i_dz,reco::TrackBase::i_dz));
-
+  errors[0][trackNumber] = pte.transverseCurvatureError(); 
+  errors[1][trackNumber] = pte.thetaError(); 
+  errors[2][trackNumber] = pte.phiError(); 
+  errors[3][trackNumber] = pte.transverseImpactParameterError(); 
+  errors[4][trackNumber] = pte.longitudinalImpactParameterError(); 
 }
 
 void VertexFitterResult::reset()

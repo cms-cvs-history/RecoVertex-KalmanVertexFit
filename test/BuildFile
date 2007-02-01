@@ -9,8 +9,13 @@
 <use name=clhep>
 <use name=boost>
 <use name=root>
+<use name=DataFormats/Math>
+<use name=DataFormats/TrackReco>
 
-<flags SEAL_PLUGIN_NAME="KalmanVertexFitTest">
+<flags SEAL_PLUGIN_NAME="RecoVertexKalmanVertexFitTest">
 
-<library file=*.cc name=KalmanVertexFitTest>
+<library file=*.cc name=RecoVertexKalmanVertexFitTest>
 </library>
+<export>
+ <lib name=RecoVertexKalmanVertexFitTest>
+</export>
