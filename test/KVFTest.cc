@@ -90,7 +90,7 @@ KVFTest::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     // Call the KalmanVertexFitter if more than 1 track
     if (t_tks.size() > 1) {
       //      KalmanVertexFitter kvf(kvfPSet);
-      KalmanVertexFitter kvf;
+      KalmanVertexFitter kvf(true);
       TransientVertex tv = kvf.vertex(t_tks);
 
       std::cout << "Position: " << Vertex::Point(tv.position()) << "\n";
