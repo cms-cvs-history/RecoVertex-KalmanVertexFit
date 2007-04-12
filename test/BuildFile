@@ -12,7 +12,7 @@
 <use name=DataFormats/Math>
 <use name=DataFormats/TrackReco>
 
-<flags SEAL_PLUGIN_NAME="RecoVertexKalmanVertexFitTest">
+<flags EDM_PLUGIN=1>
 
 <library file=*.cc name=RecoVertexKalmanVertexFitTest>
 </library>
