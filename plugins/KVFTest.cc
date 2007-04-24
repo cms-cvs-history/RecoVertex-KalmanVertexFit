@@ -1,4 +1,4 @@
-#include "RecoVertex/KalmanVertexFit/test/KVFTest.h"
+#include "RecoVertex/KalmanVertexFit/plugins/KVFTest.h"
 
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
