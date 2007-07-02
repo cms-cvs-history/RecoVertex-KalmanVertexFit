@@ -101,7 +101,7 @@ void VertexFitterResult::fill(const TransientVertex & recVertex,
       Basic3DVector<double> momAtVtx((**simTrack).momentum());
 
       reco::TrackBase::ParameterVector sParameters=
-	associatorForParamAtPca->parametersAtClosestApproachGeom(vert, momAtVtx, (int) (**simTrack).charge());
+	associatorForParamAtPca->parametersAtClosestApproach(vert, momAtVtx, (int) (**simTrack).charge());
       fillParameters(sParameters, simPars, numberOfSimTracks);
       simIndex[numberOfSimTracks] = -1;
       ++numberOfSimTracks;
