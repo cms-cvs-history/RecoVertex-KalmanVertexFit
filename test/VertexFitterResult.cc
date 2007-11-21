@@ -101,7 +101,7 @@ void VertexFitterResult::fill(const TransientVertex & recVertex,
       Basic3DVector<double> momAtVtx((**simTrack).momentum());
 
       reco::TrackBase::ParameterVector sParameters=
-	associatorForParamAtPca->parametersAtClosestApproachGeom(vert, momAtVtx, (int) (**simTrack).charge());
+	associatorForParamAtPca->parametersAtClosestApproach(vert, momAtVtx, (int) (**simTrack).charge());
       fillParameters(sParameters, simPars, numberOfSimTracks);
       simIndex[numberOfSimTracks] = -1;
       ++numberOfSimTracks;
@@ -189,12 +189,12 @@ void VertexFitterResult::fillParameters (const reco::TrackBase::ParameterVector&
 void VertexFitterResult::fillParameters (const PerigeeTrajectoryParameters & ptp,
 	float* params[5], int trackNumber)
 {
-  const AlgebraicVector5 & perigee = ptp.vector();
-  params[0][trackNumber] = perigee(0);
-  params[1][trackNumber] = perigee(1);
-  params[2][trackNumber] = perigee(2);
-  params[3][trackNumber] = perigee(3);
-  params[4][trackNumber] = perigee(4);
+  const AlgebraicVector & perigee = ptp.vector_old();
+  params[0][trackNumber] = perigee[0];
+  params[1][trackNumber] = perigee[1];
+  params[2][trackNumber] = perigee[2];
+  params[3][trackNumber] = perigee[3];
+  params[4][trackNumber] = perigee[4];
 }
 
 void VertexFitterResult::fillErrors (const PerigeeTrajectoryError & pte,

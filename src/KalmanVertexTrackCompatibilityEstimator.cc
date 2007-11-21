@@ -60,6 +60,8 @@ KalmanVertexTrackCompatibilityEstimator::estimate(const reco::Vertex & vertex,
   CachingVertex cachingVertex(linP, err, initialTracks,
   			    vertex.chi2());
   // FIXME: this should work also for tracks without a persistent ref.
+  return estimateNFittedTrack(cachingVertex, vertexTrack);
+  /*
   const TrackTransientTrack* ttt = dynamic_cast<const TrackTransientTrack*>(track.basicTransientTrack());
   if ((ttt!=0) && 
   	(find(vertex.tracks_begin(), vertex.tracks_end(), ttt->persistentTrackRef()) != vertex.tracks_end()))
@@ -68,6 +70,7 @@ KalmanVertexTrackCompatibilityEstimator::estimate(const reco::Vertex & vertex,
   } else {
     return estimateNFittedTrack(cachingVertex, vertexTrack);
   }
+  */
 }
 
 
@@ -82,9 +85,11 @@ KalmanVertexTrackCompatibilityEstimator::estimateFittedTrack
   //remove track from the vertex using the vertex updator
   // Using the update instead of the remove methode, we can specify a weight which
   // is different than then one which the vertex track has been defined with.
-  CachingVertex rVert = updator.remove(v, track);
+  //CachingVertex rVert = updator.remove(v, track);
   RefCountedVertexTrack newSmoothedTrack = trackUpdator.update(v, track);
-  return estimateDifference(v,rVert,newSmoothedTrack);
+//   cout << newSmoothedTrack->smoothedChi2()<<" "<<estimateDifference(v,rVert,newSmoothedTrack)<<endl;
+//   return estimateDifference(v,rVert,newSmoothedTrack);
+  return newSmoothedTrack->smoothedChi2();
 }
 
 // method calculating track<-->vertex compatibility
