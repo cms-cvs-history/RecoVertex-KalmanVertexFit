@@ -100,13 +100,15 @@ void VertexFitterResult::fill(const TransientVertex & recVertex,
       
       Basic3DVector<double> momAtVtx((**simTrack).momentum());
 
-      reco::TrackBase::ParameterVector sParameters=
-	associatorForParamAtPca->parametersAtClosestApproach(vert, momAtVtx, (int) (**simTrack).charge());
-      fillParameters(sParameters, simPars, numberOfSimTracks);
-      simIndex[numberOfSimTracks] = -1;
-      ++numberOfSimTracks;
+      pair<bool, reco::TrackBase::ParameterVector> paramPair =
+	associatorForParamAtPca->parametersAtClosestApproach(vert, momAtVtx, (float) (**simTrack).charge());
+        if (paramPair.first) {
+	  fillParameters(paramPair.second, simPars, numberOfSimTracks);
+	  simIndex[numberOfSimTracks] = -1;
+	  ++numberOfSimTracks;
+        }
     }
-    tracks[0] = simv->daughterTracks().size();
+    tracks[0] = numberOfSimTracks;
   }
 
 
