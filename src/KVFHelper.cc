@@ -1,14 +1,16 @@
 #include "RecoVertex/KalmanVertexFit/interface/KVFHelper.h"
 using namespace std;
 
-double KVFHelper::vertexChi2(const CachingVertex & vertexA, 
-	const CachingVertex & vertexB) const
+template <unsigned int N>
+double KVFHelper<N>::vertexChi2(const CachingVertex<N> & vertexA, 
+	const CachingVertex<N> & vertexB) const
 {
   return vertexChi2(vertexA.vertexState(), vertexB.vertexState());
 }
 
 
-double KVFHelper::vertexChi2(const VertexState & vertexA,
+template <unsigned int N>
+double KVFHelper<N>::vertexChi2(const VertexState & vertexA,
 	const VertexState & vertexB) const
 {
 // cout <<"Start\n";
@@ -33,21 +35,30 @@ double KVFHelper::vertexChi2(const VertexState & vertexA,
 }
 
 
-float KVFHelper::trackParameterChi2(const RefCountedVertexTrack track) const
+template <unsigned int N>
+float KVFHelper<N>::trackParameterChi2(const RefCountedVertexTrack track) const
 {
   return trackParameterChi2(track->linearizedTrack(), track->refittedState());
 }
 
 
-float KVFHelper::trackParameterChi2(
+template <unsigned int N>
+float KVFHelper<N>::trackParameterChi2(
 	const RefCountedLinearizedTrackState linTrack,
 	const RefCountedRefittedTrackState refittedTrackState) const
 {
-  AlgebraicVector5 parameterResiduals = linTrack->predictedStateParameters() -
-  	linTrack->refittedParamFromEquation(refittedTrackState);
-  AlgebraicSymMatrix55 trackParametersWeight = linTrack->predictedStateWeight();
 
-  float lChi2 = ROOT::Math::Similarity(parameterResiduals, trackParametersWeight);
+  typedef ROOT::Math::SMatrix<double,N,N,ROOT::Math::MatRepSym<double,N> > AlgebraicSymMatrixNN;
+  typedef ROOT::Math::SVector<double,N> AlgebraicVectorN;
+
+  AlgebraicVectorN parameterResiduals = linTrack->predictedStateParameters() -
+  	linTrack->refittedParamFromEquation(refittedTrackState);
+//   AlgebraicSymMatrixNN trackParametersWeight = linTrack->predictedStateWeight();
+
+//   float lChi2 = ROOT::Math::Similarity(parameterResiduals, trackParametersWeight);
+  float lChi2 = ROOT::Math::Similarity(parameterResiduals, linTrack->predictedStateWeight());
   return (lChi2);
 }
 
+template class KVFHelper<5>;
+template class KVFHelper<6>;

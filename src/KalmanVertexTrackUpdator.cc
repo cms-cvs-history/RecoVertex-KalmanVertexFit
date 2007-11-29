@@ -6,14 +6,16 @@
 #include "RecoVertex/VertexPrimitives/interface/VertexException.h"
 
 
-RefCountedVertexTrack KalmanVertexTrackUpdator::update
-	(const CachingVertex & vertex , RefCountedVertexTrack track) const
+template <unsigned int N>
+typename CachingVertex<N>::RefCountedVertexTrack
+KalmanVertexTrackUpdator<N>::update
+	(const CachingVertex<N> & vertex , RefCountedVertexTrack track) const
 
 {
-  pair<RefCountedRefittedTrackState, AlgebraicMatrix33> thePair = 
+  trackMatrixPair thePair = 
   	trackRefit(vertex.vertexState(), track->linearizedTrack());
 
-  CachingVertex rVert = updator.remove(vertex, track);
+  CachingVertex<N> rVert = updator.remove(vertex, track);
 
   float smoothedChi2 = helper.vertexChi2(rVert, vertex) +
 	helper.trackParameterChi2(track->linearizedTrack(), thePair.first);
@@ -23,11 +25,22 @@ RefCountedVertexTrack KalmanVertexTrackUpdator::update
 	track->weight());
 }
 
-pair<RefCountedRefittedTrackState, AlgebraicMatrix33> 
-KalmanVertexTrackUpdator::trackRefit(const VertexState & vertex,
-	 RefCountedLinearizedTrackState linTrackState) const
+template <unsigned int N>
+typename KalmanVertexTrackUpdator<N>::trackMatrixPair
+KalmanVertexTrackUpdator<N>::trackRefit(const VertexState & vertex,
+	 KalmanVertexTrackUpdator<N>::RefCountedLinearizedTrackState linTrackState) const
 
 {
+  typedef ROOT::Math::SVector<double,N> AlgebraicVectorN;
+  typedef ROOT::Math::SVector<double,N-2> AlgebraicVectorM;
+  typedef ROOT::Math::SMatrix<double,N,3,ROOT::Math::MatRepStd<double,N,3> > AlgebraicMatrixN3;
+  typedef ROOT::Math::SMatrix<double,N,N-2,ROOT::Math::MatRepStd<double,N,N-2> > AlgebraicMatrixNM;
+  typedef ROOT::Math::SMatrix<double,N-2,3,ROOT::Math::MatRepStd<double,N-2,3> > AlgebraicMatrixM3;
+  typedef ROOT::Math::SMatrix<double,N,N,ROOT::Math::MatRepSym<double,N> > AlgebraicSymMatrixNN;
+  typedef ROOT::Math::SMatrix<double,N+1,N+1,ROOT::Math::MatRepSym<double,N+1> > AlgebraicSymMatrixOO;
+  typedef ROOT::Math::SMatrix<double,N+1,N+1,ROOT::Math::MatRepStd<double,N+1,N+1> > AlgebraicMatrixOO;
+  typedef ROOT::Math::SMatrix<double,N-2,N-2,ROOT::Math::MatRepSym<double,N-2> > AlgebraicSymMatrixMM;
+
   //Vertex position 
   GlobalPoint vertexPosition = vertex.position();
 
@@ -38,44 +51,46 @@ KalmanVertexTrackUpdator::trackRefit(const VertexState & vertex,
   AlgebraicSymMatrix33 vertexErrorMatrix = vertex.error().matrix_new();
 
 //track information
-  AlgebraicMatrix53 a = linTrackState->positionJacobian();
-  AlgebraicMatrix53 b = linTrackState->momentumJacobian();
+  const AlgebraicMatrixN3 & a = linTrackState->positionJacobian();
+  const AlgebraicMatrixNM & b = linTrackState->momentumJacobian();
 
-  AlgebraicVector5 trackParameters = 
-  	linTrackState->predictedStateParameters();
+//   AlgebraicVectorN trackParameters = 
+//   	linTrackState->predictedStateParameters();
 
-  AlgebraicSymMatrix55 trackParametersWeight = 
+  AlgebraicSymMatrixNN trackParametersWeight = 
   	linTrackState->predictedStateWeight();
 
-  AlgebraicSymMatrix33 s = ROOT::Math::SimilarityT(b,trackParametersWeight);
+  AlgebraicSymMatrixMM s = ROOT::Math::SimilarityT(b,trackParametersWeight);
   
   int ifail = ! s.Invert();
   if(ifail !=0) throw VertexException
   	("KalmanVertexTrackUpdator::S matrix inversion failed");
    
-  AlgebraicVector3 newTrackMomentumP =  s * (ROOT::Math::Transpose(b)) * trackParametersWeight * 
-    (trackParameters - linTrackState->constantTerm() - a*vertexCoord);
+  AlgebraicVectorM newTrackMomentumP =  s * (ROOT::Math::Transpose(b)) * trackParametersWeight * 
+    (linTrackState->predictedStateParameters() - linTrackState->constantTerm() - a*vertexCoord);
 
-  AlgebraicMatrix33 refittedPositionMomentumConvariance = 
+  AlgebraicMatrix3M refittedPositionMomentumConvariance = 
     -vertexErrorMatrix * (ROOT::Math::Transpose(a)) * trackParametersWeight * b * s;
 
-  AlgebraicSymMatrix33 refittedMomentumConvariance = s +  
+  AlgebraicSymMatrixMM refittedMomentumConvariance = s +  
      ROOT::Math::SimilarityT(refittedPositionMomentumConvariance, vertex.weight().matrix_new());
 
   
  // int matrixSize = 3+3; //refittedMomentumConvariance.num_col();
-  AlgebraicMatrix66  covMatrix; //(matrixSize, matrixSize);
+  AlgebraicMatrixOO  covMatrix; //(matrixSize, matrixSize);
   covMatrix.Place_at(refittedPositionMomentumConvariance, 0, 3);
   covMatrix.Place_at(ROOT::Math::Transpose(refittedPositionMomentumConvariance), 3, 0);
   covMatrix.Place_at(vertexErrorMatrix, 0, 0);
   covMatrix.Place_at(refittedMomentumConvariance, 3 ,3);
-  ROOT::Math::SVector<double, 21> vup = covMatrix.UpperBlock();
 
-  AlgebraicSymMatrix66 covSymMatrix (vup);
+  AlgebraicSymMatrixOO covSymMatrix(covMatrix.LowerBlock());
 
   RefCountedRefittedTrackState refittedTrackState = linTrackState->
 	createRefittedTrackState(vertexPosition, newTrackMomentumP, covSymMatrix);
 
-  return pair<RefCountedRefittedTrackState, AlgebraicMatrix33>
+  return pair<RefCountedRefittedTrackState, AlgebraicMatrix3M>
   		(refittedTrackState, refittedPositionMomentumConvariance);
 } 
+
+template class KalmanVertexTrackUpdator<5>;
+template class KalmanVertexTrackUpdator<6>;

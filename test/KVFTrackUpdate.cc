@@ -87,7 +87,7 @@ KVFTrackUpdate::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     if (t_tks.size() >= 1) {
       //      KalmanVertexFitter kvf(kvfPSet);
       KalmanVertexFitter kvf(true);
-      CachingVertex tv = kvf.vertex(singeTrackV, glbPos, glbErrPos);
+      CachingVertex<5> tv = kvf.vertex(singeTrackV, glbPos, glbErrPos);
       FreeTrajectoryState fts = tv.tracks().front()->refittedState()->freeTrajectoryState();
 
       std::cout << "Position: " << fts.position() << "\n";

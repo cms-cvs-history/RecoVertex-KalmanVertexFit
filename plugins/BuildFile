@@ -1,4 +1,5 @@
 <use name=FWCore/Framework>
+<use name=RecoVertex/VertexPrimitives>
 <use name=DataFormats/Common>
 <use name=SimDataFormats/TrackingAnalysis>
 <use name=FWCore/ParameterSet>
