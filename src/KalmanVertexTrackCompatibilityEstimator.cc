@@ -50,17 +50,13 @@ float KalmanVertexTrackCompatibilityEstimator<N>::estimate(const reco::Vertex & 
   CachingVertex<N> cachingVertex(linP, err, initialTracks,
   			    vertex.chi2());
   // FIXME: this should work also for tracks without a persistent ref.
-  return estimateNFittedTrack(cachingVertex, vertexTrack);
-  /*
-  const TrackTransientTrack* ttt = dynamic_cast<const TrackTransientTrack*>(track.basicTransientTrack());
-  if ((ttt!=0) && 
-  	(find(vertex.tracks_begin(), vertex.tracks_end(), ttt->persistentTrackRef()) != vertex.tracks_end()))
+//   return estimateNFittedTrack(cachingVertex, vertexTrack);
+  if (find(vertex.tracks_begin(), vertex.tracks_end(), track.trackBaseRef()) != vertex.tracks_end())
   {
     return estimateFittedTrack(cachingVertex, vertexTrack);
   } else {
     return estimateNFittedTrack(cachingVertex, vertexTrack);
   }
-  */
 }
 
 
