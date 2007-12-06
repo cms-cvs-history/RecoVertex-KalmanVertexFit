@@ -19,11 +19,7 @@ float KalmanSmoothedVertexChi2Estimator<N>::estimate(const CachingVertex<N> & ve
   float sum = 0.;
   for(typename vector<RefCountedVertexTrack>::iterator i = tracks.begin(); i != tracks.end(); i++)
   {
-   sum += helper.trackParameterChi2((*i)->linearizedTrack(), (*i)->refittedState());
-//  KalmanVertexTrackCompatibilityEstimator<N> est;
-//   cout << "KalmanVertexTrackCompatibilityEstimator "<<est.estimate(vertex, *i)
-//    << " - "<<est.estimate(vertex, (*i)->linearizedTrack())<<endl;
-//   cout << "In VT: "<< (*i)->smoothedChi2()<<endl;
+   sum += (*i)->weight() * helper.trackParameterChi2((*i)->linearizedTrack(), (*i)->refittedState());
   }
  returnChi = v_part + sum;
  return returnChi;   
