@@ -1,6 +1,5 @@
 <use name=FWCore/Framework>
 <use name=DataFormats/Common>
-<use name=SimDataFormats/TrackingAnalysis>
 <use name=FWCore/ParameterSet>
 <use name=TrackingTools/TransientTrack>
 <use name=CommonTools/Statistics>
@@ -11,9 +10,7 @@
 <use name=root>
 <use name=DataFormats/Math>
 <use name=DataFormats/TrackReco>
+<use name=hepmc>
 
 <library file=*.cc name=RecoVertexKalmanVertexFitTest>
 </library>
-<export>
- <lib name=RecoVertexKalmanVertexFitTest>
-</export>
