@@ -12,5 +12,3 @@
 <use name=DataFormats/TrackReco>
 <use name=hepmc>
 
-<library file=*.cc name=RecoVertexKalmanVertexFitTest>
-</library>
